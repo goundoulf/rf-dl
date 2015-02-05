@@ -1,12 +1,5 @@
 #!/bin/sh
 
-#$ grep "player/reecouter" emission-terre-a-terre-le-monde-des-teintures-naturelles-2014-06-28 
-#                <a class="rf-player-open" href="/player/reecouter?play=4863284">
-
-# http://www.franceculture.fr/emission-terre-a-terre-le-monde-des-teintures-naturelles-2014-06-28
-# http://www.franceculture.fr/player/reecouter?play=4863284
-
-
 DL_DIR="$PWD"
 USER_AGENT="Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:35.0) Gecko/20100101 Firefox/35.0"
 
@@ -91,9 +84,9 @@ $RM -f "$TMP_FILE"
 
 # download or resume mp3
 if [ -z "$MP3_NAME.mp3.part" ]; then
-	$CURL -o "$MP3_NAME.mp3.part" "http://$DOMAIN_NAME/$MP3_URL"
+	$CURL -o "$MP3_NAME.mp3.part" -A "$USER_AGENT" "http://$DOMAIN_NAME/$MP3_URL"
 else
-	$CURL -C - -o "$MP3_NAME.mp3.part" "http://$DOMAIN_NAME/$MP3_URL"
+	$CURL -C - -o "$MP3_NAME.mp3.part" -A "$USER_AGENT" "http://$DOMAIN_NAME/$MP3_URL"
 fi
 
 $MV "$MP3_NAME.mp3.part" "$MP3_NAME.mp3"
