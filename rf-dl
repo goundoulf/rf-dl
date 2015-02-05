@@ -1,0 +1,99 @@
+#!/bin/sh
+
+#$ grep "player/reecouter" emission-terre-a-terre-le-monde-des-teintures-naturelles-2014-06-28 
+#                <a class="rf-player-open" href="/player/reecouter?play=4863284">
+
+# http://www.franceculture.fr/emission-terre-a-terre-le-monde-des-teintures-naturelles-2014-06-28
+# http://www.franceculture.fr/player/reecouter?play=4863284
+
+
+DL_DIR="$PWD"
+USER_AGENT="Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:35.0) Gecko/20100101 Firefox/35.0"
+
+if [ "$#" -ne 1 ]; then
+	echo "Usage: $0 URL" >&2
+	exit 1
+fi
+
+CURL=`which curl`
+GREP=`which grep`
+RM=`which rm`
+MV=`which mv`
+
+# check for curl
+if [ -z "$CURL" ]; then
+	echo "ERROR: please install curl" >&2
+	exit 1
+fi
+
+# check for grep
+if [ -z "$GREP" ]; then
+	echo "ERROR: please install grep" >&2
+	exit 1
+fi
+
+DOMAIN_NAME=${1#*\/\/}
+DOMAIN_NAME=${DOMAIN_NAME%%\/*}
+
+case "$DOMAIN_NAME" in
+	"www.fipradio.fr")
+		CHANNEL="Fip"
+		;;
+	"www.francebleu.fr")
+		CHANNEL="France Bleu"
+		;;
+	"www.franceinfo.fr")
+		CHANNEL="France Info"
+		;;
+	"www.franceinter.fr")
+		CHANNEL="France Inter"
+		;;
+	"www.franceculture.fr")
+		CHANNEL="France Culture"
+		;;
+	"www.francemusique.fr")
+		CHANNEL="France Musique"
+		;;
+	"www.lemouv.fr")
+		CHANNEL="Mouv'"
+		;;
+	*)
+		echo "Error"
+		exit 1
+		;;
+esac
+
+# check what kind of url this is
+if [ ${1%=*} = "http://$DOMAIN_NAME/player/reecouter?play" ]; then
+	PLAYER_URL="$1"
+else
+	ID=`$CURL -s "$1" | $GREP "reecouter?play="`
+	ID=${ID##*=}
+	PLAYER_URL="http://$DOMAIN_NAME/player/reecouter?play=${ID%\"*}"
+fi
+
+TMP_FILE="/tmp/rf_$ID.html"
+$CURL -s -o "$TMP_FILE" "$PLAYER_URL"
+
+MP3_URL=`$GREP "id=\"player\"" $TMP_FILE`
+MP3_URL=${MP3_URL#*href=\"}
+MP3_URL=${MP3_URL%%\"*}
+
+# extract infos from html file to set mp3 name
+PROGRAM=`$GREP "class=\"title\"" $TMP_FILE`
+PROGRAM=${PROGRAM##*\">}
+TITLE=`$GREP "class=\"title-diffusion\"" $TMP_FILE`
+TITLE=${TITLE##*\">}
+MP3_NAME="$CHANNEL - ${PROGRAM%%<*} - ${TITLE%%<*}"
+
+# remove temporary file
+$RM -f "$TMP_FILE"
+
+# download or resume mp3
+if [ -z "$MP3_NAME.mp3.part" ]; then
+	$CURL -o "$MP3_NAME.mp3.part" "http://$DOMAIN_NAME/$MP3_URL"
+else
+	$CURL -C - -o "$MP3_NAME.mp3.part" "http://$DOMAIN_NAME/$MP3_URL"
+fi
+
+$MV "$MP3_NAME.mp3.part" "$MP3_NAME.mp3"
