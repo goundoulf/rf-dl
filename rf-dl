@@ -8,10 +8,10 @@ if [ "$#" -ne 1 ]; then
 	exit 1
 fi
 
-CURL=`which curl`
-GREP=`which grep`
-RM=`which rm`
-MV=`which mv`
+CURL=$(which curl)
+GREP=$(which grep)
+RM=$(which rm)
+MV=$(which mv)
 
 # check for curl
 if [ -z "$CURL" ]; then
@@ -57,10 +57,10 @@ case "$DOMAIN_NAME" in
 esac
 
 # check what kind of url this is
-if [ ${1%=*} = "http://$DOMAIN_NAME/player/reecouter?play" ]; then
+if [ "${1%=*}" = "http://$DOMAIN_NAME/player/reecouter?play" ]; then
 	PLAYER_URL="$1"
 else
-	ID=`$CURL -s "$1" | $GREP "reecouter?play="`
+	ID=$($CURL -s "$1" | $GREP "reecouter?play=")
 	ID=${ID##*=}
 	PLAYER_URL="http://$DOMAIN_NAME/player/reecouter?play=${ID%\"*}"
 fi
@@ -68,14 +68,14 @@ fi
 TMP_FILE="/tmp/rf_$ID.html"
 $CURL -s -o "$TMP_FILE" "$PLAYER_URL"
 
-MP3_URL=`$GREP "id=\"player\"" $TMP_FILE`
+MP3_URL=$($GREP "id=\"player\"" "$TMP_FILE")
 MP3_URL=${MP3_URL#*href=\"}
 MP3_URL=${MP3_URL%%\"*}
 
 # extract infos from html file to set mp3 name
-PROGRAM=`$GREP "class=\"title\"" $TMP_FILE`
+PROGRAM=$($GREP "class=\"title\"" "$TMP_FILE")
 PROGRAM=${PROGRAM##*\">}
-TITLE=`$GREP "class=\"title-diffusion\"" $TMP_FILE`
+TITLE=$($GREP "class=\"title-diffusion\"" "$TMP_FILE")
 TITLE=${TITLE##*\">}
 MP3_NAME="$CHANNEL - ${PROGRAM%%<*} - ${TITLE%%<*}"
 
@@ -83,10 +83,10 @@ MP3_NAME="$CHANNEL - ${PROGRAM%%<*} - ${TITLE%%<*}"
 $RM -f "$TMP_FILE"
 
 # download or resume mp3
-if [ -z "$MP3_NAME.mp3.part" ]; then
-	$CURL -o "$MP3_NAME.mp3.part" -A "$USER_AGENT" "http://$DOMAIN_NAME/$MP3_URL"
+if [ -z "$DL_DIR/$MP3_NAME.mp3.part" ]; then
+	$CURL -o "$DL_DIR/$MP3_NAME.mp3.part" -A "$USER_AGENT" "http://$DOMAIN_NAME/$MP3_URL"
 else
 	$CURL -C - -o "$MP3_NAME.mp3.part" -A "$USER_AGENT" "http://$DOMAIN_NAME/$MP3_URL"
 fi
 
-$MV "$MP3_NAME.mp3.part" "$MP3_NAME.mp3"
+$MV "$DL_DIR/$MP3_NAME.mp3.part" "$DL_DIR/$MP3_NAME.mp3"
